@@ -1,21 +1,25 @@
 import json
+from pathlib import Path
 
 import trio
 from trio_websocket import serve_websocket, ConnectionClosed
 
 async def echo_server(request):
     ws = await request.accept()
+    with open(Path('data') / '156.json', 'r', encoding='utf-8') as file_156:
+        coordinates = json.loads(file_156.read())['coordinates']
+
     while True:
         try:
-            message = await ws.get_message()
-            buses = {
-                "msgType": "Buses",
-                  "buses": [
-                      {"busId": "c790сс", "lat": 55.7500, "lng": 37.600, "route": "120"},
-                      {"busId": "a134aa", "lat": 55.7494, "lng": 37.621, "route": "670к"},
-                  ]
-            }
-            await ws.send_message(json.dumps(buses))
+            for coordinate in coordinates:
+                buses = {
+                    "msgType": "Buses",
+                      "buses": [
+                          {"busId": "a156", "lat": coordinate[0], "lng": coordinate[1], "route": "156"},
+                      ]
+                }
+                await ws.send_message(json.dumps(buses))
+                await trio.sleep(1)
         except ConnectionClosed:
             break
 
