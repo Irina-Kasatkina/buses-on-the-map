@@ -1,13 +1,12 @@
 import json
 import os
-from pathlib import Path
 from sys import stderr
 
 import trio
 from trio_websocket import open_websocket_url
 
 
-def load_routes(directory_path='routes'):
+def load_routes(directory_path: str = 'routes'):
     for filename in os.listdir(directory_path):
         if filename.endswith('.json'):
             filepath = os.path.join(directory_path, filename)
@@ -15,12 +14,12 @@ def load_routes(directory_path='routes'):
                 yield json.load(file)
 
 
-async def run_bus(url, bus_id, route):
+async def run_bus(url: str, bus_id: str, route: dict):
     while True:
         try:
             async with open_websocket_url(url) as ws:
                 for coordinate in route['coordinates']:
-                    bus = {bus_id: {'busId': bus_id, 'lat': coordinate[0], 'lng': coordinate[1], 'route': bus_id}}
+                    bus = {'busId': bus_id, 'lat': coordinate[0], 'lng': coordinate[1], 'route': bus_id}
                     await ws.send_message(json.dumps(bus))
                     await trio.sleep(2)
         except  OSError as ose:

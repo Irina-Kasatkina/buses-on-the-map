@@ -2,25 +2,27 @@ import json
 import logging
 
 import trio
-from trio_websocket import ConnectionClosed, serve_websocket
+from trio_websocket import serve_websocket, ConnectionClosed, WebSocketRequest
 
 
 buses = {}
 
 
-async def get_messages(request):
+async def get_bus_updates(request: WebSocketRequest):
+    global buses
     ws = await request.accept()
     while True:
         try:
-            bus_id, bus_info = json.loads(await ws.get_message()).popitem()
-            logging.warning(f'get_messages(): bus_id={bus_id}, bus_info={bus_info}')
-            buses[bus_id] = bus_info
+            message = await ws.get_message()
+            bus_info = json.loads(message)
+            logging.warning(f'get_messages(): bus_info={bus_info}')
+            buses[bus_info['busId']] = bus_info
             await trio.sleep(1)
         except ConnectionClosed:
             break
 
 
-async def talk_to_browser(request):
+async def talk_to_browser(request: WebSocketRequest):
     global buses
     ws = await request.accept()
     while True:
@@ -38,7 +40,7 @@ async def talk_to_browser(request):
 
 async def main():
     async with trio.open_nursery() as nursery:
-        nursery.start_soon(serve_websocket, get_messages, '127.0.0.1', 8080, None)
+        nursery.start_soon(serve_websocket, get_bus_updates, '127.0.0.1', 8080, None)
         nursery.start_soon(serve_websocket, talk_to_browser, '127.0.0.1', 8000, None)
 
 
